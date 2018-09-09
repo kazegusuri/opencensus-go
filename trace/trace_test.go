@@ -32,7 +32,17 @@ var (
 
 func init() {
 	// no random sampling, but sample children of sampled spans.
-	ApplyConfig(Config{DefaultSampler: ProbabilitySampler(0)})
+	ApplyConfig(Config{
+		DefaultSampler:    ProbabilitySampler(0),
+		DefaultAttributes: []Attribute{},
+	})
+}
+
+func testResetConfig() {
+	ApplyConfig(Config{
+		DefaultSampler:    ProbabilitySampler(0),
+		DefaultAttributes: []Attribute{},
+	})
 }
 
 func TestStrings(t *testing.T) {
@@ -174,7 +184,7 @@ func TestSampling(t *testing.T) {
 			}
 		}
 	}
-	ApplyConfig(Config{DefaultSampler: ProbabilitySampler(0)}) // reset the default sampler.
+	testResetConfig() // reset the default sampler.
 }
 
 func TestProbabilitySampler(t *testing.T) {
@@ -383,6 +393,58 @@ func TestSetSpanAttributes(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("exporting span: got %#v want %#v", got, want)
 	}
+}
+
+func TestDefaultAttributes(t *testing.T) {
+	for _, test := range []struct {
+		defaultAttibutes []Attribute
+		wantAttributes   map[string]interface{}
+	}{
+		{
+			nil,
+			map[string]interface{}{"key1": "value1"},
+		},
+		{
+			[]Attribute{},
+			map[string]interface{}{"key1": "value1"},
+		},
+		{
+			[]Attribute{StringAttribute("key2", "value2")},
+			map[string]interface{}{"key1": "value1", "key2": "value2"},
+		},
+		{
+			[]Attribute{StringAttribute("key2", "value2"), StringAttribute("key3", "value3")},
+			map[string]interface{}{"key1": "value1", "key2": "value2", "key3": "value3"},
+		},
+		{
+			[]Attribute{StringAttribute("key1", "xxx"), StringAttribute("key2", "value2")},
+			map[string]interface{}{"key1": "value1", "key2": "value2"},
+		},
+	} {
+		ApplyConfig(Config{DefaultAttributes: test.defaultAttibutes})
+		span := startSpan(StartOptions{})
+		span.AddAttributes(StringAttribute("key1", "value1"))
+		got, err := endSpan(span)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := &SpanData{
+			SpanContext: SpanContext{
+				TraceID:      tid,
+				SpanID:       SpanID{},
+				TraceOptions: 0x1,
+			},
+			ParentSpanID:    sid,
+			Name:            "span0",
+			Attributes:      test.wantAttributes,
+			HasRemoteParent: true,
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("exporting span: got %#v want %#v", got, want)
+		}
+	}
+	testResetConfig()
 }
 
 func TestAnnotations(t *testing.T) {

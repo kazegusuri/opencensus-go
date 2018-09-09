@@ -25,6 +25,9 @@ type Config struct {
 	// DefaultSampler is the default sampler used when creating new spans.
 	DefaultSampler Sampler
 
+	// DefaultAttributes is the default attributes used when creating new spans.
+	DefaultAttributes []Attribute
+
 	// IDGenerator is for internal use only.
 	IDGenerator internal.IDGenerator
 }
@@ -40,6 +43,9 @@ func ApplyConfig(cfg Config) {
 	c := *config.Load().(*Config)
 	if cfg.DefaultSampler != nil {
 		c.DefaultSampler = cfg.DefaultSampler
+	}
+	if cfg.DefaultAttributes != nil {
+		c.DefaultAttributes = cfg.DefaultAttributes
 	}
 	if cfg.IDGenerator != nil {
 		c.IDGenerator = cfg.IDGenerator

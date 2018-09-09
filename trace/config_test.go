@@ -27,6 +27,33 @@ func TestApplyZeroConfig(t *testing.T) {
 	if got, want := reflect.ValueOf(currentCfg.DefaultSampler).Pointer(), reflect.ValueOf(cfg.DefaultSampler).Pointer(); got != want {
 		t.Fatalf("config.DefaultSampler = %#v; want %#v", got, want)
 	}
+	if got, want := reflect.ValueOf(currentCfg.DefaultAttributes).Pointer(), reflect.ValueOf(cfg.DefaultAttributes).Pointer(); got != want {
+		t.Fatalf("config.DefaultAttributes = %#v; want %#v", got, want)
+	}
+	if got, want := currentCfg.IDGenerator, cfg.IDGenerator; got != want {
+		t.Fatalf("config.IDGenerator = %#v; want %#v", got, want)
+	}
+}
+
+func TestApplyConfig(t *testing.T) {
+	initCfg := config.Load().(*Config)
+	defer config.Store(initCfg)
+
+	config.Store(&Config{})
+	cfg := Config{
+		DefaultSampler:    ProbabilitySampler(0),
+		DefaultAttributes: []Attribute{StringAttribute("foo", "bar")},
+		IDGenerator:       &defaultIDGenerator{},
+	}
+	ApplyConfig(cfg)
+
+	currentCfg := config.Load().(*Config)
+	if got, want := reflect.ValueOf(currentCfg.DefaultSampler).Pointer(), reflect.ValueOf(cfg.DefaultSampler).Pointer(); got != want {
+		t.Fatalf("config.DefaultSampler = %#v; want %#v", got, want)
+	}
+	if got, want := reflect.ValueOf(currentCfg.DefaultAttributes).Pointer(), reflect.ValueOf(cfg.DefaultAttributes).Pointer(); got != want {
+		t.Fatalf("config.DefaultAttributes = %#v; want %#v", got, want)
+	}
 	if got, want := currentCfg.IDGenerator, cfg.IDGenerator; got != want {
 		t.Fatalf("config.IDGenerator = %#v; want %#v", got, want)
 	}

@@ -197,6 +197,7 @@ func startSpanInternal(name string, hasParent bool, parent SpanContext, remotePa
 	}
 	span.spanContext.SpanID = cfg.IDGenerator.NewSpanID()
 	sampler := cfg.DefaultSampler
+	attributes := cfg.DefaultAttributes
 
 	if !hasParent || remoteParent || o.Sampler != nil {
 		// If this span is the child of a local span and no Sampler is set in the
@@ -236,6 +237,10 @@ func startSpanInternal(name string, hasParent bool, parent SpanContext, remotePa
 			span.spanStore = ss
 			ss.add(span)
 		}
+	}
+	if len(attributes) != 0 {
+		span.data.Attributes = make(map[string]interface{})
+		copyAttributes(span.data.Attributes, attributes)
 	}
 
 	return span
